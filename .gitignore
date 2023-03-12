@@ -36,5 +36,3 @@ cmake-build-debug
 data
 CMakeLists.txt
 main.cpp
-README.md
-.gitignore
