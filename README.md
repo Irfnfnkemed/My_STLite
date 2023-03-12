@@ -2,7 +2,10 @@
 
 ## vector
 实现了vector的模板类。支持T没有默认构造函数，但是不支持其没有拷贝构造函数。
-利用动态数组实现。`insert`、`pop`函数均摊时间复杂度均为`O(1)`。
+
+利用动态数组实现。
+
+`insert`、`pop`函数均摊时间复杂度均为`O(1)`。
 
 接口：
 ```cpp
@@ -134,9 +137,12 @@ class vector{
 ## priority queue
 
 实现了priority queue的模板类。支持T没有默认构造函数，但是不支持其没有拷贝构造函数。
+
 利用二项堆实现。
+
 `push`函数平均时间复杂度为`O(1)`，最坏`O(log n)`。
 `pop`、`merge`、`top`函数时间复杂度为`O(log n)`。
+
 接口：
 ```cpp
 template<typename T, class Compare = std::less<T>>
@@ -166,8 +172,12 @@ class priority_queue {
 ```
 ## map
 实现了map的模板类。T需要有默认构造函数和拷贝构造函数。
+
 利用红黑树实现。
+
 `insert`、`erase`、`find`、`[]`函数时间复杂度为`O(log n)`。
+
+接口：
 ```cpp
 template<class Key,class T,class Compare = std::less<Key>>
 class map {
