@@ -6,7 +6,7 @@
 
 接口：
 ```cpp
-template<class T>
+template<class T, class Compare = std::less<T>>
 class vector{
     
     class iterator {
@@ -128,5 +128,39 @@ class vector{
 
     void pop_back();
     
-}
+};
+```
+
+## priority queue
+
+实现了priority queue的模板类。支持T没有默认构造函数，但是不支持其没有有拷贝构造函数。
+利用二项堆实现。
+`push`函数平均时间复杂度为`O(1)`，最坏`O(log n)`。
+`pop`、`merge`、`top`函数时间复杂度为`O(log n)`。
+接口：
+```cpp
+template<typename T, class Compare = std::less<T>>
+class priority_queue {
+
+    priority_queue();
+
+    priority_queue(const priority_queue &other);
+
+    ~priority_queue();
+
+    priority_queue &operator=(const priority_queue &other);
+
+    const T &top() const;
+
+    void push(const T &e);
+
+    void pop();
+
+    size_t size() const;
+
+    bool empty() const;
+
+    void merge(priority_queue &other);
+    
+};
 ```
