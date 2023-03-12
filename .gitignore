@@ -30,3 +30,11 @@
 *.exe
 *.out
 *.app
+
+cmake-build-debug
+.idea
+data
+CMakeLists.txt
+main.cpp
+README.md
+.gitignore
