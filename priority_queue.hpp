@@ -110,10 +110,13 @@ namespace sjtu {
         }
 
         void push(const T &e) {
-            try {
-                if (root->first_son != nullptr) {
-                    Compare()(*(root->first_son->data), e);
-                }
+            try {//新插入节点仅可能与二项树的根节点进行比较
+                node *p = root->first_son;
+                int height = 0;
+                while (p != nullptr && Compare()(*(p->data), e) && p->height == height) {
+                    p = p->next_brother;
+                    ++height;
+                }//当且仅当新插入节点比当前树的根节点大、可向前连续合并时，方需继续比较
             } catch (...) { return; }
             priority_queue tmp;
             tmp.root->first_son = new node(0, new T(e));
