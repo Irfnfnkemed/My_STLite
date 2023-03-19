@@ -26,7 +26,13 @@ namespace sjtu {
     >
     class map {
     public:
+
         typedef pair<const Key, T> value_type;
+
+        class iterator;
+
+        class const_iterator;
+
     private:
         /**
          * the internal type of data.
@@ -40,13 +46,15 @@ namespace sjtu {
         struct node {
             node *left_son;
             node *right_son;
+            node *father;
             value_type *data;
             colourT colour;
 
-            node(node *left_son_ = nullptr, node *right_son_ = nullptr,
+            node(node *left_son_ = nullptr, node *right_son_ = nullptr, node *father_ = nullptr,
                  value_type *data_ = nullptr, colourT colour_ = black) {
                 left_son = left_son_;
                 right_son = right_son_;
+                father = father_;
                 data = data_;
                 colour = colour_;
             }
@@ -54,16 +62,18 @@ namespace sjtu {
 
         node *root;
         size_t siz = 0;
+        iterator min;
+        iterator max;
 
         void traverse_copy(node *now_root, node *other_root) {
             if (other_root->left_son != nullptr) {
-                now_root->left_son = new node(nullptr, nullptr,
+                now_root->left_son = new node(nullptr, nullptr, now_root,
                                               new value_type(*(other_root->left_son->data)),
                                               other_root->left_son->colour);
                 traverse_copy(now_root->left_son, other_root->left_son);
             }
             if (other_root->right_son != nullptr) {
-                now_root->right_son = new node(nullptr, nullptr,
+                now_root->right_son = new node(nullptr, nullptr, now_root,
                                                new value_type(*(other_root->right_son->data)),
                                                other_root->right_son->colour);
                 traverse_copy(now_root->right_son, other_root->right_son);
@@ -79,46 +89,114 @@ namespace sjtu {
             now_root = nullptr;
         }
 
-        node *LLb(node *root_now) {
+        void LL(node *root_now, bool flag) {//flag为真，表新节点着为黑色
             node *root_new = root_now->left_son;
             root_now->left_son = root_new->right_son;
+            if (root_now->left_son != nullptr) { root_now->left_son->father = root_now; }
             root_new->right_son = root_now;
-            root_new->colour = black;
-            root_now->colour = red;
+            root_new->father = root_now->father;
+            root_now->father = root_new;
+            if (root_new->father != nullptr) {
+                if (root_new->father->right_son == root_now) {
+                    root_new->father->right_son = root_new;
+                } else { root_new->father->left_son = root_new; }
+            }
+            if (flag) {
+                root_new->colour = black;
+                root_now->colour = red;
+            } else {
+                root_new->colour = red;
+                root_now->colour = black;
+                if (root_new->left_son != nullptr) { root_new->left_son->colour = black; }
+            }
             if (root_now == root) { root = root_new; }
-            return root_new;
         }
 
-        node *RRb(node *root_now) {
+        void RR(node *root_now, bool flag) {//flag为真，表新节点着为黑色
             node *root_new = root_now->right_son;
             root_now->right_son = root_new->left_son;
+            if (root_now->right_son != nullptr) { root_now->right_son->father = root_now; }
             root_new->left_son = root_now;
-            root_new->colour = black;
-            root_now->colour = red;
+            root_new->father = root_now->father;
+            root_now->father = root_new;
+            if (root_new->father != nullptr) {
+                if (root_new->father->right_son == root_now) {
+                    root_new->father->right_son = root_new;
+                } else { root_new->father->left_son = root_new; }
+            }
+            if (flag) {
+                root_new->colour = black;
+                root_now->colour = red;
+            } else {
+                root_new->colour = red;
+                root_now->colour = black;
+                if (root_new->right_son != nullptr) { root_new->right_son->colour = black; }
+            }
             if (root_now == root) { root = root_new; }
-            return root_new;
         }
 
-        node *LLr(node *root_now) {
-            node *root_new = root_now->left_son;
-            root_now->left_son = root_new->right_son;
-            root_new->right_son = root_now;
-            root_new->colour = red;
-            root_now->colour = black;
-            if (root_new->left_son != nullptr) { root_new->left_son->colour = black; }
-            if (root_now == root) { root = root_new; }
-            return root_new;
+        void swap_node(node *&one, node *&two) {
+            node *tmp = one->father;
+            one->father = two->father;
+            two->father = tmp;
+            if (one->father != nullptr) {
+                if (one->father->left_son == two) { one->father->left_son = one; }
+                else { one->father->right_son = one; }
+            }
+            if (two->father != nullptr) {
+                if (two->father->left_son == one) { two->father->left_son = two; }
+                else { two->father->right_son = two; }
+            }
+            tmp = one->left_son;
+            one->left_son = two->left_son;
+            two->left_son = tmp;
+            if (one->left_son != nullptr) { one->left_son->father = one; }
+            if (two->left_son != nullptr) { two->left_son->father = two; }
+            tmp = one->right_son;
+            one->right_son = two->right_son;
+            two->right_son = tmp;
+            if (one->right_son != nullptr) { one->right_son->father = one; }
+            if (two->right_son != nullptr) { two->right_son->father = two; }
+            colourT tmp_c = one->colour;
+            one->colour = two->colour;
+            two->colour = tmp_c;
+            if (one == root) { root = two; }
+            else if (two == root) { root = one; }
+            tmp = one;
+            one = two;
+            two = tmp;
         }
 
-        node *RRr(node *root_now) {
-            node *root_new = root_now->right_son;
-            root_now->right_son = root_new->left_son;
-            root_new->left_son = root_now;
-            root_new->colour = red;
-            root_now->colour = black;
-            if (root_new->right_son != nullptr) { root_new->right_son->colour = black; }
-            if (root_now == root) { root = root_new; }
-            return root_new;
+        inline static bool is_left_son_of_father(node *p) {
+            return (p->father != nullptr && p->father->left_son == p);
+        }
+
+        inline static bool is_right_son_of_father(node *p) {
+            return (p->father != nullptr && p->father->right_son == p);
+        }
+
+        inline static bool have_red_left_son(node *p) {
+            return (p->left_son != nullptr && p->left_son->colour == red);
+        }
+
+        inline static bool have_black_left_son(node *p) {
+            return (p->left_son == nullptr || p->left_son->colour == black);
+        }
+
+        inline static bool have_red_right_son(node *p) {
+            return (p->right_son != nullptr && p->right_son->colour == red);
+        }
+
+        inline static bool have_black_right_son(node *p) {
+            return (p->right_son == nullptr || p->right_son->colour == black);
+        }
+
+        inline static bool have_red_father(node *p) {
+            return (p->father != nullptr && p->father->colour == red);
+        }
+
+        inline static bool have_black_father(node *p) {
+            return (p->father != nullptr && p->father->colour == black);
         }
 
     public:
@@ -129,9 +207,6 @@ namespace sjtu {
          *     like it = map.begin(); --it;
          *       or it = map.end(); ++end();
          */
-        class iterator;
-
-        class const_iterator;
 
         class iterator {
 
@@ -163,7 +238,7 @@ namespace sjtu {
             // Notice: you may add some code in here and class const_iterator and namespace sjtu to implement toy_traits_test,
             // this part is only for bonus.
             map *map_point;
-            pointer iter_point;
+            node *iter_point;
 
         public:
 
@@ -172,7 +247,7 @@ namespace sjtu {
                 iter_point = nullptr;
             }
 
-            iterator(map *map_point_, value_type *iter_point_) {
+            iterator(map *map_point_, node *iter_point_) {
                 map_point = map_point_;
                 iter_point = iter_point_;
             }
@@ -190,22 +265,15 @@ namespace sjtu {
 
             iterator &operator++() {
                 if (iter_point == nullptr) { throw invalid_iterator(); }
-                node *p = map_point->root, *p_find = nullptr;
-                while (p->data != iter_point) {
-                    if (Compare()(iter_point->first, p->data->first)) {
-                        p_find = p;
-                        p = p->left_son;
-                    } else if (Compare()(p->data->first, iter_point->first)) {
-                        p = p->right_son;
-                    }
-                }
+                node *p = iter_point;
                 if (p->right_son != nullptr) {
                     p = p->right_son;
                     while (p->left_son != nullptr) { p = p->left_son; }
-                    iter_point = p->data;
+                    iter_point = p;
                 } else {
-                    if (p_find == nullptr) { iter_point = nullptr; }
-                    else { iter_point = p_find->data; }
+                    while (is_right_son_of_father(p)) { p = p->father; }
+                    if (p->father == nullptr) { iter_point = nullptr; }
+                    else { iter_point = p->father; }
                 }
                 return *this;
             }
@@ -217,33 +285,25 @@ namespace sjtu {
             }
 
             iterator &operator--() {
-                node *p = map_point->root, *p_find = nullptr;
-                if (p == nullptr) { throw invalid_iterator(); }
-                if (iter_point == nullptr) {
+                node *p = iter_point;
+                if (map_point->siz == 0) { throw invalid_iterator(); }
+                if (p == nullptr) {
+                    iter_point = map_point->max.iter_point;
+                } else if (p->left_son != nullptr) {
+                    p = p->left_son;
                     while (p->right_son != nullptr) { p = p->right_son; }
-                    iter_point = p->data;
+                    iter_point = p;
                 } else {
-                    while (p->data != iter_point) {
-                        if (Compare()(iter_point->first, p->data->first)) {
-                            p = p->left_son;
-                        } else if (Compare()(p->data->first, iter_point->first)) {
-                            p_find = p;
-                            p = p->right_son;
-                        }
-                    }
-                    if (p->left_son != nullptr) {
-                        p = p->left_son;
-                        while (p->right_son != nullptr) { p = p->right_son; }
-                        iter_point = p->data;
-                    } else if (iter_point != nullptr) { iter_point = p_find->data; }
-                    else { throw invalid_iterator(); }
+                    while (is_left_son_of_father(p)) { p = p->father; }
+                    if (p->father == nullptr) { throw invalid_iterator(); }
+                    else { iter_point = p->father; }
                 }
                 return *this;
             }
 
             value_type &operator*() const {
                 if (iter_point == nullptr) { throw runtime_error(); }
-                return *iter_point;
+                return *(iter_point->data);
             }
 
             bool operator==(const iterator &rhs) const {
@@ -262,12 +322,22 @@ namespace sjtu {
                 return map_point != rhs.map_point || iter_point != rhs.iter_point;
             }
 
-            pointer operator->() const noexcept { return iter_point; }
+            pointer operator->() const noexcept { return iter_point->data; }
 
             map *get_map_point() const { return map_point; }
 
-            value_type *get_iter_point() const { return iter_point; }
+            node *get_iter_point() const { return iter_point; }
 
+            map *get_map_point() { return map_point; }
+
+            void set_iterator(map *map_point_, node *iter_point_) {
+                map_point = map_point_;
+                iter_point = iter_point_;
+            }
+
+            void set_iterator(node *iter_point_) {
+                iter_point = iter_point_;
+            }
         };
 
         class const_iterator {
@@ -288,13 +358,13 @@ namespace sjtu {
             using iterator_category = std::output_iterator_tag;
 
             const map *map_point;
-            value_type *iter_point;
+            node *iter_point;
 
         public:
 
             const_iterator() : map_point(nullptr), iter_point(nullptr) {}
 
-            const_iterator(const map *map_point_, value_type *iter_point_) :
+            const_iterator(const map *map_point_, node *iter_point_) :
                     map_point(map_point_), iter_point(iter_point_) {}
 
             const_iterator(const const_iterator &other) :
@@ -311,22 +381,15 @@ namespace sjtu {
 
             const_iterator &operator++() {
                 if (iter_point == nullptr) { throw invalid_iterator(); }
-                node *p = map_point->root, *p_find = nullptr;
-                while (p->data != iter_point) {
-                    if (Compare()(iter_point->first, p->data->first)) {
-                        p_find = p;
-                        p = p->left_son;
-                    } else if (Compare()(p->data->first, iter_point->first)) {
-                        p = p->right_son;
-                    }
-                }
+                node *p = iter_point;
                 if (p->right_son != nullptr) {
                     p = p->right_son;
                     while (p->left_son != nullptr) { p = p->left_son; }
-                    iter_point = p->data;
+                    iter_point = p;
                 } else {
-                    if (p_find == nullptr) { iter_point = nullptr; }
-                    else { iter_point = p_find->data; }
+                    while (is_right_son_of_father(p)) { p = p->father; }
+                    if (p->father == nullptr) { iter_point = nullptr; }
+                    else { iter_point = p->father; }
                 }
                 return *this;
             }
@@ -338,32 +401,25 @@ namespace sjtu {
             }
 
             const_iterator &operator--() {
-                node *p = map_point->root, *p_find = nullptr;
-                if (iter_point == nullptr) {
+                node *p = iter_point;
+                if (map_point->siz == 0) { throw invalid_iterator(); }
+                if (p == nullptr) {
+                    iter_point = map_point->max.iter_point;
+                } else if (p->left_son != nullptr) {
+                    p = p->left_son;
                     while (p->right_son != nullptr) { p = p->right_son; }
-                    iter_point = p->data;
+                    iter_point = p;
                 } else {
-                    while (p->data != iter_point) {
-                        if (Compare()(iter_point->first, p->data->first)) {
-                            p = p->left_son;
-                        } else if (Compare()(p->data->first, iter_point->first)) {
-                            p_find = p;
-                            p = p->right_son;
-                        }
-                    }
-                    if (p->left_son != nullptr) {
-                        p = p->left_son;
-                        while (p->right_son != nullptr) { p = p->right_son; }
-                        iter_point = p->data;
-                    } else if (iter_point != nullptr) { iter_point = p_find->data; }
-                    else { throw invalid_iterator(); }
+                    while (is_left_son_of_father(p)) { p = p->father; }
+                    if (p->father == nullptr) { throw invalid_iterator(); }
+                    else { iter_point = p->father; }
                 }
                 return *this;
             }
 
             value_type &operator*() const {
                 if (iter_point == nullptr) { throw runtime_error(); }
-                return *iter_point;
+                return *(iter_point->data);
             }
 
             bool operator==(const iterator &rhs) const {
@@ -382,35 +438,56 @@ namespace sjtu {
                 return map_point != rhs.map_point || iter_point != rhs.iter_point;
             }
 
-            const value_type *operator->() const noexcept { return iter_point; }
+            const value_type *operator->() const noexcept { return iter_point->data; }
 
             const map *get_map_point() const { return map_point; }
 
-            value_type *get_iter_point() const { return iter_point; }
-
+            node *get_iter_point() const { return iter_point; }
         };
 
         map() {
             root = nullptr;
             siz = 0;
+            min.set_iterator(this, nullptr);
+            max.set_iterator(this, nullptr);
         }
 
 
         map(const map &other) {
             siz = other.siz;
             if (other.root != nullptr) {
-                root = new node(nullptr, nullptr, new value_type(*(other.root->data)), black);
+                root = new node(nullptr, nullptr, nullptr, new value_type(*(other.root->data)), black);
                 traverse_copy(root, other.root);
-            } else { root = nullptr; }
+                node *p = root;
+                while (p->left_son != nullptr) { p = p->left_son; }
+                min.set_iterator(this, p);
+                p = root;
+                while (p->right_son != nullptr) { p = p->right_son; }
+                max.set_iterator(this, p);
+            } else {
+                root = nullptr;
+                min.set_iterator(this, nullptr);
+                max.set_iterator(this, nullptr);
+            }
         }
 
         map &operator=(const map &other) {
             if (&other == this) { return *this; }
             traverse_delete(root);
             if (other.root != nullptr) {
-                root = new node(nullptr, nullptr, new value_type(*(other.root->data)), black);
+                root = new node(nullptr, nullptr, nullptr, new value_type(*(other.root->data)), black);
                 traverse_copy(root, other.root);
-            } else { root = nullptr; }
+                node *p = root;
+                while (p->left_son != nullptr) { p = p->left_son; }
+                min.set_iterator(p);
+                p = root;
+                while (p->right_son != nullptr) { p = p->right_son; }
+                max.set_iterator(p);
+            } else {
+                root = nullptr;
+                min.set_iterator(nullptr);
+                max.set_iterator(nullptr);
+            }
             siz = other.siz;
             return *this;
         }
@@ -460,23 +537,9 @@ namespace sjtu {
         //behave like at() throw index_out_of_bound if such key does not exist.
         const T &operator[](const Key &key) const { return at(key); }
 
-        iterator begin() {
-            if (root == nullptr) { return iterator(this, nullptr); }
-            else {
-                node *p = root;
-                while (p->left_son != nullptr) { p = p->left_son; }
-                return iterator(this, p->data);
-            }
-        }
+        iterator begin() { return min; }
 
-        const_iterator cbegin() const {
-            if (root == nullptr) { throw runtime_error(); }
-            else {
-                node *p = root;
-                while (p->left_son != nullptr) { p = p->left_son; }
-                return const_iterator(this, p->data);
-            }
-        }
+        const_iterator cbegin() const { return min; }
 
         //return a iterator to the end
         //in fact, it returns past-the-end.
@@ -491,6 +554,8 @@ namespace sjtu {
         void clear() {
             if (root != nullptr) { traverse_delete(root); }
             siz = 0;
+            min.set_iterator(nullptr);
+            max.set_iterator(nullptr);
         }
 
         //insert an element.
@@ -498,71 +563,54 @@ namespace sjtu {
         //the iterator to the new element (or the element that prevented the insertion),
         //the second one is true if insert successfully, or false.
         pair<iterator, bool> insert(const value_type &value) {
-            node *p = root, *p_father = nullptr,
-                    *p_grandfather = nullptr, *p_great_grandfather = nullptr;
+            node *p = root;
             if (p == nullptr) {
-                root = new node(nullptr, nullptr, new value_type(value));
+                root = new node(nullptr, nullptr, nullptr, new value_type(value));
                 ++siz;
-                return pair<iterator, bool>(iterator(this, root->data), true);
+                min.set_iterator(root);
+                max.set_iterator(root);
+                return pair<iterator, bool>(iterator(this, root), true);
             }
-            if ((p->left_son != nullptr && p->left_son->colour == red) &&
-                (p->right_son != nullptr && p->right_son->colour == red)) {
+            if (have_red_left_son(p) && have_red_right_son(p)) {
                 p->left_son->colour = p->right_son->colour = black;
             }
             bool flag = false;
             while (true) {
-                p_great_grandfather = p_grandfather;
-                p_grandfather = p_father;
-                p_father = p;
                 if (Compare()(p->data->first, value.first)) {
-                    p = p->right_son;
-                    if (p == nullptr) {
-                        p = p_father->right_son = new node(nullptr, nullptr, new value_type(value), red);
+                    if (p->right_son == nullptr) {
+                        p = p->right_son = new node(nullptr, nullptr, p, new value_type(value), red);
                         flag = true;
-                    }
+                    } else { p = p->right_son; }
                 } else if (Compare()(value.first, p->data->first)) {
-                    p = p->left_son;
-                    if (p == nullptr) {
-                        p = p_father->left_son = new node(nullptr, nullptr, new value_type(value), red);
+                    if (p->left_son == nullptr) {
+                        p = p->left_son = new node(nullptr, nullptr, p, new value_type(value), red);
                         flag = true;
-                    }
-                } else { return pair<iterator, bool>(iterator(this, p->data), false); }
-                if (p->colour == black &&
-                    (p->left_son != nullptr && p->left_son->colour == red) &&
-                    (p->right_son != nullptr && p->right_son->colour == red)) {
+                    } else { p = p->left_son; }
+                } else { return pair<iterator, bool>(iterator(this, p), false); }
+                if (p->colour == black && have_red_left_son(p) && have_red_right_son(p)) {
                     p->colour = red;
                     p->left_son->colour = p->right_son->colour = black;//当前节点为黑、两子节点为红，当前节点染红、子节点染黑
                 }
-                if (p->colour == red && p_father != nullptr && p_father->colour == red) {//当前节点、父节点均为红
-                    node *tmp;
-                    if (p_grandfather->left_son == p_father && p_father->left_son == p) {
-                        tmp = LLb(p_grandfather);
-                    } else if (p_grandfather->right_son == p_father &&
-                               p_father->right_son == p) {
-                        tmp = RRb(p_grandfather);
-                    } else if (p_grandfather->left_son == p_father &&
-                               p_father->right_son == p) {
-                        tmp = RRb(p_father);
-                        p_grandfather->left_son = tmp;
-                        tmp = LLb(p_grandfather);
-                        p_father = p_great_grandfather;
-                    } else if (p_grandfather->right_son == p_father &&
-                               p_father->left_son == p) {
-                        tmp = LLb(p_father);
-                        p_grandfather->right_son = tmp;
-                        tmp = RRb(p_grandfather);
-                        p_father = p_great_grandfather;
+                if (p->colour == red && have_red_father(p)) {//当前节点、父节点均为红
+                    if (is_left_son_of_father(p->father)) {
+                        if (is_left_son_of_father(p)) { LL(p->father->father, true); }
+                        else {
+                            RR(p->father, true);
+                            LL(p->father, true);
+                        }
+                    } else {
+                        if (is_right_son_of_father(p)) { RR(p->father->father, true); }
+                        else {
+                            LL(p->father, true);
+                            RR(p->father, true);
+                        }
                     }
-                    if (p_great_grandfather != nullptr) {
-                        if (p_great_grandfather->left_son == p_grandfather) {
-                            p_great_grandfather->left_son = tmp;
-                        } else { p_great_grandfather->right_son = tmp; }
-                    }
-                    p_grandfather = p_father;
                 }
                 if (flag) {
                     ++siz;
-                    return pair<iterator, bool>(iterator(this, p->data), true);
+                    if (Compare()(value.first, min->first)) { --min; }
+                    if (Compare()(max->first, value.first)) { ++max; }
+                    return pair<iterator, bool>(iterator(this, p), true);
                 }
             }
         }
@@ -578,125 +626,97 @@ namespace sjtu {
                 delete root;
                 root = nullptr;
                 --siz;
+                min.set_iterator(nullptr);
+                max.set_iterator(nullptr);
                 return;
             }
-            node *p = root, *p_father = nullptr, *p_grandfather = nullptr,
-                    *p_substitution = nullptr, *p_substitution_father = nullptr,
-                    *p_brother = nullptr, *tmp = nullptr;
+            if (pos.get_iter_point() == min.get_iter_point()) { ++min; }
+            if (pos.get_iter_point() == max.get_iter_point()) { --max; }
+            node *p = root, *p_substitution = nullptr, *p_brother = nullptr;
             bool flag = true, end_flag = false;
-            if ((root->left_son == nullptr || root->left_son->colour == black) &&
-                (root->right_son == nullptr || root->right_son->colour == black)) {
+            if (have_black_left_son(root) && have_black_right_son(root)) {
                 root->colour = red;
             }
             while (true) {
                 if (flag) {
                     if (Compare()(pos->first, p->data->first)) {
-                        p_grandfather = p_father;
-                        p_father = p;
                         p = p->left_son;
                     } else if (Compare()(p->data->first, pos->first)) {
-                        p_grandfather = p_father;
-                        p_father = p;
                         p = p->right_son;
                     } else if (p->left_son != nullptr && p->right_son != nullptr) {
-                        p_grandfather = p_father;
-                        p_substitution_father = p_father;
-                        p_father = p;
                         p_substitution = p;
                         p = p->left_son;
                         flag = false;
                     } else { end_flag = true; }
                 } else {
                     if (p->right_son != nullptr) {
-                        p_grandfather = p_father;
-                        p_father = p;
                         p = p->right_son;
                     } else {
-                        value_type *del = p_substitution->data;
-                        p_substitution->data = p->data;
-                        p->data = del;
+                        swap_node(p_substitution, p);
                         end_flag = true;
                     }
                 }
                 if (p != root && p->colour == black) {
-                    if (p_father->colour == black) {//将父节点调为红色
-                        if (p_father->left_son == p) {
-                            tmp = RRr(p_father);
-                            p_father->colour = red;
-                            tmp->colour = black;
+                    if (p->father->colour == black) {//将父节点调为红色
+                        if (p->father->left_son == p) {
+                            RR(p->father, true);
                         } else {
-                            tmp = LLr(p_father);
-                            p_father->colour = red;
-                            tmp->colour = black;
+                            LL(p->father, true);
                         }
-                        if (p_grandfather != nullptr) {
-                            if (p_grandfather->left_son == p_father) {
-                                p_grandfather->left_son = tmp;
-                            } else { p_grandfather->right_son = tmp; }
-                        }
-                        p_grandfather = tmp;
                     }
-                    if ((p->left_son == nullptr || p->left_son->colour == black) &&
-                        (p->right_son == nullptr || p->right_son->colour == black)) {
-                        if (p_father->left_son == p) { p_brother = p_father->right_son; }
-                        else { p_brother = p_father->left_son; }
+                    if (have_black_left_son(p) && have_black_right_son(p)) {
+                        if (p->father->left_son == p) { p_brother = p->father->right_son; }
+                        else { p_brother = p->father->left_son; }
                         if (p_brother == nullptr || (p_brother->colour == black &&
-                                                     (p_brother->left_son == nullptr ||
-                                                      p_brother->left_son->colour == black) &&
-                                                     (p_brother->right_son == nullptr ||
-                                                      p_brother->right_son->colour == black))) {
-                            p_father->colour = black;
+                                                     have_black_left_son(p_brother) &&
+                                                     have_black_right_son(p_brother))) {
+                            p->father->colour = black;
                             p->colour = red;
                             if (p_brother != nullptr) { p_brother->colour = red; }
                         } else {
-                            if (p_father->right_son == p_brother &&
-                                p_brother->right_son != nullptr &&
-                                p_brother->right_son->colour == red) {
-                                tmp = RRr(p_father);
-                                p->colour = red;
-                            } else if (p_father->left_son == p_brother &&
-                                       p_brother->left_son != nullptr &&
-                                       p_brother->left_son->colour == red) {
-                                tmp = LLr(p_father);
-                                p->colour = red;
-                            } else if (p_father->right_son == p_brother &&
-                                       p_brother->left_son != nullptr &&
-                                       p_brother->left_son->colour == red) {
-                                tmp = LLr(p_brother);
-                                p_father->right_son = tmp;
-                                tmp = RRr(p_father);
-                                p->colour = red;
+                            if (is_left_son_of_father(p)) {
+                                if (have_red_right_son(p_brother)) {
+                                    RR(p->father, false);
+                                    p->colour = red;
+                                } else {
+                                    LL(p_brother, false);
+                                    RR(p->father, false);
+                                    p->colour = red;
+                                }
                             } else {
-                                tmp = RRr(p_brother);
-                                p_father->left_son = tmp;
-                                tmp = LLr(p_father);
-                                p->colour = red;
-                            }
-                            if (p_grandfather != nullptr) {
-                                if (p_grandfather->left_son == p_father) {
-                                    p_grandfather->left_son = tmp;
-                                } else { p_grandfather->right_son = tmp; }
+                                if (have_red_left_son(p_brother)) {
+                                    LL(p->father, false);
+                                    p->colour = red;
+                                } else {
+                                    RR(p_brother, false);
+                                    LL(p->father, false);
+                                    p->colour = red;
+                                }
                             }
                         }
                     }
                 }
                 if (end_flag) { break; }
             }
-            if (p_father != nullptr) {
-                if (p_father->left_son == p) {
+            if (p->father != nullptr) {
+                if (is_left_son_of_father(p)) {
                     if (p->left_son == nullptr) {
-                        p_father->left_son = p->right_son;
+                        p->father->left_son = p->right_son;
+                        if (p->right_son != nullptr) { p->right_son->father = p->father; }
                         if (p->colour == black) { p->right_son->colour = black; }
                     } else {
-                        p_father->left_son = p->left_son;
+                        p->father->left_son = p->left_son;
+                        if (p->left_son != nullptr) { p->left_son->father = p->father; }
                         if (p->colour == black) { p->left_son->colour = black; }
                     }
                 } else {
                     if (p->left_son == nullptr) {
-                        p_father->right_son = p->right_son;
+                        p->father->right_son = p->right_son;
+                        if (p->right_son != nullptr) { p->right_son->father = p->father; }
                         if (p->colour == black) { p->right_son->colour = black; }
                     } else {
-                        p_father->right_son = p->left_son;
+                        p->father->right_son = p->left_son;
+                        if (p->left_son != nullptr) { p->left_son->father = p->father; }
                         if (p->colour == black) { p->left_son->colour = black; }
                     }
                 }
@@ -742,7 +762,7 @@ namespace sjtu {
                     p = p->left_son;
                 } else if (Compare()(p->data->first, key)) {
                     p = p->right_son;
-                } else { return iterator(this, p->data); }
+                } else { return iterator(this, p); }
             }
         }
 
@@ -755,7 +775,7 @@ namespace sjtu {
                     p = p->left_son;
                 } else if (Compare()(p->data->first, key)) {
                     p = p->right_son;
-                } else { return const_iterator(this, p->data); }
+                } else { return const_iterator(this, p); }
             }
         }
     };
