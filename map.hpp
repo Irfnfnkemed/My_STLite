@@ -147,31 +147,39 @@ namespace sjtu {
             swap(one->colour, two->colour);
             if (one == root) { root = two; }
             else if (two == root) { root = one; }
-            //swap(one, two);
         }
 
-
         template<class T_swap>
-        void swap(T_swap &one, T_swap &two) {
+        inline static void swap(T_swap &one, T_swap &two) {
             T_swap tmp = one;
             one = two;
             two = tmp;
+        }
+
+        inline void adjust_insert_link(node *now_node) {//插入节点后，前后节点、头尾节点的维护
+            if (now_node->pre != nullptr) {
+                now_node->pre->next = now_node;
+            } else { head = now_node; }
+            if (now_node->next != nullptr) {
+                now_node->next->pre = now_node;
+            } else { tail = now_node; }
+        }
+
+        inline void adjust_delete_link(node *now_node) {//删除节点前，前后节点、头尾节点的维护
+            if (now_node->pre != nullptr) {
+                now_node->pre->next = now_node->next;
+            } else { head = now_node->next; }
+            if (now_node->next != nullptr) {
+                now_node->next->pre = now_node->pre;
+            } else { tail = now_node->pre; }
         }
 
         inline static bool is_left_son_of_father(node *p) {
             return (p->father != nullptr && p->father->left_son == p);
         }
 
-        inline static bool is_right_son_of_father(node *p) {
-            return (p->father != nullptr && p->father->right_son == p);
-        }
-
         inline static bool have_red_left_son(node *p) {
             return (p->left_son != nullptr && p->left_son->colour == red);
-        }
-
-        inline static bool have_black_left_son(node *p) {
-            return (p->left_son != nullptr && p->left_son->colour == black);
         }
 
         inline static bool have_null_left_son(node *p) {
@@ -182,12 +190,69 @@ namespace sjtu {
             return (p->right_son != nullptr && p->right_son->colour == red);
         }
 
-        inline static bool have_black_right_son(node *p) {
-            return (p->right_son != nullptr && p->right_son->colour == black);
-        }
-
         inline static bool have_null_right_son(node *p) {
             return (p->right_son == nullptr);
+        }
+
+
+        bool check_node(node *a, colourT b = black) {
+            if (a == nullptr) { return true; }
+            if (a->left_son != nullptr && !Compare()(a->left_son->data.first, a->data.first)) {
+                return false;
+            }
+            if (a->right_son != nullptr && !Compare()(a->data.first, a->right_son->data.first)) {
+                return false;
+            }
+            if (b == red && a->colour == red) { return false; }
+            return check_node(a->left_son, a->colour) && check_node(a->right_son, a->colour);
+        }
+
+        bool check_link() {
+            if (head == nullptr) { return true; }
+            node *p = head;
+            if (p == tail) { return siz == 1; }
+            int s = 1;
+            while (p->next != nullptr) {
+                if (!Compare()(p->data.first, p->next->data.first)) { return false; }
+                p = p->next;
+                ++s;
+            }
+            return s == siz;
+        }
+
+        bool check_road(node *p, int &h) {
+            if (p == nullptr) {
+                h = 0;
+                return true;
+            }
+            int h1, h2;
+            bool f1 = check_road(p->left_son, h1);
+            bool f2 = check_road(p->right_son, h2);
+            if (!(f1 && f2)) { return false; }
+            if (h1 != h2) { return false; }
+            if (p->colour == red) {
+                h = h1;
+                return true;
+            } else {
+                h = h1 + 1;
+                return true;
+            }
+        }
+
+        void check() {
+            int h;
+            std::cout << "\n\nCHECK BEGIN!\n";
+            std::cout << "check the length of black road:                             ";
+            if (check_road(root, h)) {
+                std::cout << "PASSED with the road length<" << h << ">\n";
+            } else { std::cout << "FAILED\n"; }
+            std::cout << "check the colour and compare between father and son:        ";
+            if (check_node(root)) { std::cout << "PASSED\n"; }
+            else { std::cout << "FAILED\n"; }
+            std::cout << "check the link of nodes:                                    ";
+            if (check_link()) { std::cout << "PASSED\n"; }
+            else { std::cout << "FAILED\n"; }
+            std::cout << "CHECK END!\n\n";
         }
 
     public:
@@ -201,11 +266,9 @@ namespace sjtu {
 
         class iterator {
 
-            friend class my_type_traits<iterator>;
-
-            friend class my_type_traits<const_iterator>;
-
             friend class const_iterator;
+
+            friend class my_iterator_traits<iterator>;
 
         private:
             // The following code is written for the C++ type_traits library.
@@ -306,11 +369,9 @@ namespace sjtu {
 
         class const_iterator {
 
-            friend class my_type_traits<const_iterator>;
-
-            friend class my_type_traits<const_iterator>;
-
             friend class iterator;
+
+            friend class my_iterator_traits<const_iterator>;
 
         private:
             // it should has similar member method as iterator.
@@ -398,7 +459,6 @@ namespace sjtu {
             head = tail = nullptr;
         }
 
-
         map(const map &other) {
             siz = other.siz;
             if (other.root != nullptr) {
@@ -408,6 +468,14 @@ namespace sjtu {
             } else {
                 head = tail = root = nullptr;
             }
+        }
+
+        map(map &&other) {
+            siz = other.siz;
+            head = other.head;
+            tail = other.tail;
+            root = other.root;
+            other.head = other.tail = other.tail = nullptr;
         }
 
         map &operator=(const map &other) {
@@ -421,6 +489,15 @@ namespace sjtu {
                 head = tail = root = nullptr;
             }
             siz = other.siz;
+            return *this;
+        }
+
+        map &operator=(map &&other) {
+            siz = other.siz;
+            head = other.head;
+            tail = other.tail;
+            root = other.root;
+            other.head = other.tail = other.tail = nullptr;
             return *this;
         }
 
@@ -505,10 +582,7 @@ namespace sjtu {
                         p_insert = p->left_son = new node(nullptr, nullptr, p,
                                                           value, red, p->pre, p);
                         ++siz;
-                        p->pre = p->left_son;//双链表中插入节点
-                        if (p->pre->pre != nullptr) {
-                            p->pre->pre->next = p->pre;
-                        } else { head = p->pre; }//更新head节点
+                        adjust_insert_link(p_insert);//双链表中插入节点
                         break;
                     } else { p = p->left_son; }
                 } else if (Compare()(p->data.first, value.first)) {
@@ -516,10 +590,7 @@ namespace sjtu {
                         p_insert = p->right_son = new node(nullptr, nullptr, p,
                                                            value, red, p, p->next);
                         ++siz;
-                        p->next = p->right_son;//双链表中插入节点
-                        if (p->next->next != nullptr) {
-                            p->next->next->pre = p->next;
-                        } else { tail = p->next; }//更新tail节点
+                        adjust_insert_link(p_insert);//双链表中插入节点
                         break;
                     } else { p = p->right_son; }
                 } else { return pair<iterator, bool>(iterator(this, p), false); }
@@ -593,11 +664,7 @@ namespace sjtu {
                     swap_node(p, p->next);
                 }
             }
-            //维护双链表
-            if (p->pre != nullptr) { p->pre->next = p->next; }
-            else { head = p->next; }
-            if (p->next != nullptr) { p->next->pre = p->pre; }
-            else { tail = p->pre; }
+            adjust_delete_link(p);//维护双链表
             if (have_red_left_son(p)) {//一个儿子情况，红黑树性质保证该节点只可能为黑、且只有一个红叶儿子
                 //将p的儿子染为黑色并挂在p父亲上，同时删除p
                 if (p == root) {
@@ -760,10 +827,10 @@ namespace sjtu {
             }
         }
 
-//Finds an element with key equivalent to key.
-//key value of the element to search for.
-//Iterator to an element with key equivalent to key.
-//  If no such element is found, past-the-end (see end()) iterator is returned.
+        //Finds an element with key equivalent to key.
+        //key value of the element to search for.
+        //Iterator to an element with key equivalent to key.
+        //  If no such element is found, past-the-end (see end()) iterator is returned.
         iterator find(const Key &key) {
             if (root == nullptr) { return iterator(this, nullptr); }
             node *p = root;
@@ -789,60 +856,6 @@ namespace sjtu {
                 } else { return const_iterator(this, p); }
             }
         }
-
-        bool check_node(node *a, colourT b = black) {
-            if (a == nullptr) { return true; }
-            if (a->left_son != nullptr && !Compare()(a->left_son->data.first, a->data.first)) {
-                return false;
-            }
-            if (a->right_son != nullptr && !Compare()(a->data.first, a->right_son->data.first)) {
-                return false;
-            }
-            if (b == red && a->colour == red) { return false; }
-            return check_node(a->left_son, a->colour) && check_node(a->right_son, a->colour);
-        }
-
-        bool check_link() {
-            if (head == nullptr) { return true; }
-            node *p = head;
-            if (p == tail) { return siz == 1; }
-            int s = 1;
-            while (p->next != nullptr) {
-                if (!Compare()(p->data.first, p->next->data.first)) { return false; }
-                p = p->next;
-                ++s;
-            }
-            return s == siz;
-        }
-
-        bool check_road(node *p, int &h) {
-            if (p == nullptr) {
-                h = 0;
-                return true;
-            }
-            int h1, h2;
-            bool f1 = check_road(p->left_son, h1);
-            bool f2 = check_road(p->right_son, h2);
-            if (!(f1 && f2)) { return false; }
-            if (h1 != h2) { return false; }
-            if (p->colour == red) {
-                h = h1;
-                return true;
-            } else {
-                h = h1 + 1;
-                return true;
-            }
-        }
-
-        void check() {
-            int h;
-            std::cout << "BEGIN!" << '\n';
-            std::cout << "check road: " << check_road(root, h);
-            std::cout << " with height: " << h << '\n';
-            std::cout << "check node: " << check_node(root) << '\n';
-            std::cout << "check link: " << check_link() << "\nEND!\n" << std::endl;
-        }
-
     };
 
     struct my_true_type {
