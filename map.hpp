@@ -147,6 +147,7 @@ namespace sjtu {
             swap(one->colour, two->colour);
             if (one == root) { root = two; }
             else if (two == root) { root = one; }
+            //swap(one, two);
         }
 
 
@@ -460,11 +461,7 @@ namespace sjtu {
         // Returns a reference to the value that is mapped to a key equivalent to key,
         //performing an insertion if such key does not already exist.
         T &operator[](const Key &key) {
-            try {
-                return at(key);
-            } catch (...) {
-                return (insert(value_type(key, T())).first)->second;
-            }
+            return (insert(value_type(key, T())).first)->second;
         }
 
         //behave like at() throw index_out_of_bound if such key does not exist.
@@ -577,117 +574,6 @@ namespace sjtu {
         //erase the element at pos.
         //throw if pos pointed to a bad element (pos == this->end() || pos points an element out of this)
         void erase(iterator pos) {
-            /*
-//            if (pos.get_map_point() != this || pos.get_iter_point() == nullptr) {
-//                throw invalid_iterator();
-//            }
-//            if (siz == 1) {
-//                delete root;
-//                head = tail = root = nullptr;
-//                --siz;
-//                return;
-//            }
-//            node *p = root, *p_substitution = nullptr, *p_brother = nullptr;
-//            bool flag = true, end_flag = false;
-//            if (have_black_left_son(root) && have_black_right_son(root)) {
-//                root->colour = red;
-//            }
-//            while (true) {
-//                if (flag) {
-//                    if (Compare()(pos->first, p->data.first)) {
-//                        p = p->left_son;
-//                    } else if (Compare()(p->data.first, pos->first)) {
-//                        p = p->right_son;
-//                    } else if (p->left_son != nullptr && p->right_son != nullptr) {
-//                        p_substitution = p;
-//                        p = p->left_son;
-//                        flag = false;
-//                    } else { end_flag = true; }
-//                } else {
-//                    if (p->right_son != nullptr) {
-//                        p = p->right_son;
-//                    } else {
-//                        swap_node(p_substitution, p);
-//                        end_flag = true;
-//                    }
-//                }
-//                if (p != root && p->colour == black) {
-//                    if (p->father->colour == black) {//将父节点调为红色
-//                        if (p->father->left_son == p) {
-//                            RR(p->father, true);
-//                        } else {
-//                            LL(p->father, true);
-//                        }
-//                    }
-//                    if (have_black_left_son(p) && have_black_right_son(p)) {
-//                        if (p->father->left_son == p) { p_brother = p->father->right_son; }
-//                        else { p_brother = p->father->left_son; }
-//                        if (p_brother == nullptr || (p_brother->colour == black &&
-//                                                     have_black_left_son(p_brother) &&
-//                                                     have_black_right_son(p_brother))) {
-//                            p->father->colour = black;
-//                            p->colour = red;
-//                            if (p_brother != nullptr) { p_brother->colour = red; }
-//                        } else {
-//                            if (is_left_son_of_father(p)) {
-//                                if (have_red_right_son(p_brother)) {
-//                                    RR(p->father, false);
-//                                    p->colour = red;
-//                                } else {
-//                                    LL(p_brother, false);
-//                                    RR(p->father, false);
-//                                    p->colour = red;
-//                                }
-//                            } else {
-//                                if (have_red_left_son(p_brother)) {
-//                                    LL(p->father, false);
-//                                    p->colour = red;
-//                                } else {
-//                                    RR(p_brother, false);
-//                                    LL(p->father, false);
-//                                    p->colour = red;
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
-//                if (end_flag) { break; }
-//            }
-//            if (p->father != nullptr) {
-//                if (is_left_son_of_father(p)) {
-//                    if (p->left_son == nullptr) {
-//                        p->father->left_son = p->right_son;
-//                        if (p->right_son != nullptr) { p->right_son->father = p->father; }
-//                        if (p->colour == black) { p->right_son->colour = black; }
-//                    } else {
-//                        p->father->left_son = p->left_son;
-//                        if (p->left_son != nullptr) { p->left_son->father = p->father; }
-//                        if (p->colour == black) { p->left_son->colour = black; }
-//                    }
-//                } else {
-//                    if (p->left_son == nullptr) {
-//                        p->father->right_son = p->right_son;
-//                        if (p->right_son != nullptr) { p->right_son->father = p->father; }
-//                        if (p->colour == black) { p->right_son->colour = black; }
-//                    } else {
-//                        p->father->right_son = p->left_son;
-//                        if (p->left_son != nullptr) { p->left_son->father = p->father; }
-//                        if (p->colour == black) { p->left_son->colour = black; }
-//                    }
-//                }
-//            } else {
-//                if (p->left_son != nullptr) { root = p->left_son; }
-//                else { root = p->right_son; }
-//            }
-//            if (p->pre != nullptr) { p->pre->next = p->next; }
-//            else { head = p->next; }
-//            if (p->next != nullptr) { p->next->pre = p->pre; }
-//            else { tail = p->pre; }
-//            delete p;
-//            --siz;
-//            root->colour = black;
-//            return;
-             */
             if (pos.get_map_point() != this || pos.get_iter_point() == nullptr) {
                 throw invalid_iterator();
             }
