@@ -68,6 +68,7 @@ namespace sjtu {
         size_t siz = 0;
         node *head;
         node *tail;
+        Compare cmp;
 
         void traverse_copy(node *now_root, node *other_root, node *&min, node *&max) {
             //min_node表以now_root为根的节点中最小的节点；max_node同理
@@ -197,10 +198,10 @@ namespace sjtu {
 
         bool check_node(node *a, colourT b = black) {
             if (a == nullptr) { return true; }
-            if (a->left_son != nullptr && !Compare()(a->left_son->data.first, a->data.first)) {
+            if (a->left_son != nullptr && !cmp(a->left_son->data.first, a->data.first)) {
                 return false;
             }
-            if (a->right_son != nullptr && !Compare()(a->data.first, a->right_son->data.first)) {
+            if (a->right_son != nullptr && !cmp(a->data.first, a->right_son->data.first)) {
                 return false;
             }
             if (b == red && a->colour == red) { return false; }
@@ -213,7 +214,7 @@ namespace sjtu {
             if (p == tail) { return siz == 1; }
             int s = 1;
             while (p->next != nullptr) {
-                if (!Compare()(p->data.first, p->next->data.first)) { return false; }
+                if (!cmp(p->data.first, p->next->data.first)) { return false; }
                 p = p->next;
                 ++s;
             }
@@ -237,22 +238,6 @@ namespace sjtu {
                 h = h1 + 1;
                 return true;
             }
-        }
-
-        void check() {
-            int h;
-            std::cout << "\n\nCHECK BEGIN!\n";
-            std::cout << "check the length of black road:                             ";
-            if (check_road(root, h)) {
-                std::cout << "PASSED with the road length<" << h << ">\n";
-            } else { std::cout << "FAILED\n"; }
-            std::cout << "check the colour and compare between father and son:        ";
-            if (check_node(root)) { std::cout << "PASSED\n"; }
-            else { std::cout << "FAILED\n"; }
-            std::cout << "check the link of nodes:                                    ";
-            if (check_link()) { std::cout << "PASSED\n"; }
-            else { std::cout << "FAILED\n"; }
-            std::cout << "CHECK END!\n\n";
         }
 
     public:
@@ -512,9 +497,9 @@ namespace sjtu {
             node *p = root;
             if (root == nullptr) { throw index_out_of_bound(); }
             while (p != nullptr) {
-                if (Compare()(key, p->data.first)) {
+                if (cmp(key, p->data.first)) {
                     p = p->left_son;
-                } else if (Compare()(p->data.first, key)) {
+                } else if (cmp(p->data.first, key)) {
                     p = p->right_son;
                 } else { return p->data.second; }
             }
@@ -525,9 +510,9 @@ namespace sjtu {
             node *p = root;
             if (root == nullptr) { throw index_out_of_bound(); }
             while (p != nullptr) {
-                if (Compare()(key, p->data.first)) {
+                if (cmp(key, p->data.first)) {
                     p = p->left_son;
-                } else if (Compare()(p->data.first, key)) {
+                } else if (cmp(p->data.first, key)) {
                     p = p->right_son;
                 } else { return p->data.second; }
             }
@@ -577,7 +562,7 @@ namespace sjtu {
             node *p = root, *p_insert;
             bool flag = false;
             while (true) {//寻找要插入的位置并插入,最后break时p为插入节点的父节点
-                if (Compare()(value.first, p->data.first)) {
+                if (cmp(value.first, p->data.first)) {
                     if (have_null_left_son(p)) {
                         p_insert = p->left_son = new node(nullptr, nullptr, p,
                                                           value, red, p->pre, p);
@@ -585,7 +570,7 @@ namespace sjtu {
                         adjust_insert_link(p_insert);//双链表中插入节点
                         break;
                     } else { p = p->left_son; }
-                } else if (Compare()(p->data.first, value.first)) {
+                } else if (cmp(p->data.first, value.first)) {
                     if (have_null_right_son(p)) {
                         p_insert = p->right_son = new node(nullptr, nullptr, p,
                                                            value, red, p, p->next);
@@ -819,9 +804,9 @@ namespace sjtu {
             node *p = root;
             while (true) {
                 if (p == nullptr) { return 0; }
-                if (Compare()(key, p->data.first)) {
+                if (cmp(key, p->data.first)) {
                     p = p->left_son;
-                } else if (Compare()(p->data.first, key)) {
+                } else if (cmp(p->data.first, key)) {
                     p = p->right_son;
                 } else { return 1; }
             }
@@ -836,9 +821,9 @@ namespace sjtu {
             node *p = root;
             while (true) {
                 if (p == nullptr) { return iterator(this, nullptr); }
-                if (Compare()(key, p->data.first)) {
+                if (cmp(key, p->data.first)) {
                     p = p->left_son;
-                } else if (Compare()(p->data.first, key)) {
+                } else if (cmp(p->data.first, key)) {
                     p = p->right_son;
                 } else { return iterator(this, p); }
             }
@@ -849,12 +834,28 @@ namespace sjtu {
             node *p = root;
             while (true) {
                 if (p == nullptr) { return const_iterator(this, nullptr); }
-                if (Compare()(key, p->data.first)) {
+                if (cmp(key, p->data.first)) {
                     p = p->left_son;
-                } else if (Compare()(p->data.first, key)) {
+                } else if (cmp(p->data.first, key)) {
                     p = p->right_son;
                 } else { return const_iterator(this, p); }
             }
+        }
+
+        void check() {
+            int h;
+            std::cout << "\n\nCHECK BEGIN!\n";
+            std::cout << "check the length of black road:                             ";
+            if (check_road(root, h)) {
+                std::cout << "PASSED with the road length<" << h << ">\n";
+            } else { std::cout << "FAILED\n"; }
+            std::cout << "check the colour and compare between father and son:        ";
+            if (check_node(root)) { std::cout << "PASSED\n"; }
+            else { std::cout << "FAILED\n"; }
+            std::cout << "check the link of nodes:                                    ";
+            if (check_link()) { std::cout << "PASSED\n"; }
+            else { std::cout << "FAILED\n"; }
+            std::cout << "CHECK END!\n\n";
         }
     };
 
