@@ -33,7 +33,7 @@ namespace sjtu {
 
         class const_iterator;
 
-    public:
+    private:
         /**
          * the internal type of data.
          * it should have a default constructor, a copy constructor.
@@ -99,7 +99,7 @@ namespace sjtu {
             }
         }
 
-        void LL(node *root_now) {
+        void rotate_LL(node *root_now) {
             node *root_new = root_now->left_son;
             root_now->left_son = root_new->right_son;
             if (root_now->left_son != nullptr) { root_now->left_son->father = root_now; }
@@ -114,7 +114,7 @@ namespace sjtu {
             if (root_now == root) { root = root_new; }
         }
 
-        void RR(node *root_now) {
+        void rotate_RR(node *root_now) {
             node *root_new = root_now->right_son;
             root_now->right_son = root_new->left_son;
             if (root_now->right_son != nullptr) { root_now->right_son->father = root_now; }
@@ -193,51 +193,6 @@ namespace sjtu {
 
         inline static bool have_null_right_son(node *p) {
             return (p->right_son == nullptr);
-        }
-
-
-        bool check_node(node *a, colourT b = black) {
-            if (a == nullptr) { return true; }
-            if (a->left_son != nullptr && !cmp(a->left_son->data.first, a->data.first)) {
-                return false;
-            }
-            if (a->right_son != nullptr && !cmp(a->data.first, a->right_son->data.first)) {
-                return false;
-            }
-            if (b == red && a->colour == red) { return false; }
-            return check_node(a->left_son, a->colour) && check_node(a->right_son, a->colour);
-        }
-
-        bool check_link() {
-            if (head == nullptr) { return true; }
-            node *p = head;
-            if (p == tail) { return siz == 1; }
-            int s = 1;
-            while (p->next != nullptr) {
-                if (!cmp(p->data.first, p->next->data.first)) { return false; }
-                p = p->next;
-                ++s;
-            }
-            return s == siz;
-        }
-
-        bool check_road(node *p, int &h) {
-            if (p == nullptr) {
-                h = 0;
-                return true;
-            }
-            int h1, h2;
-            bool f1 = check_road(p->left_son, h1);
-            bool f2 = check_road(p->right_son, h2);
-            if (!(f1 && f2)) { return false; }
-            if (h1 != h2) { return false; }
-            if (p->colour == red) {
-                h = h1;
-                return true;
-            } else {
-                h = h1 + 1;
-                return true;
-            }
         }
 
     public:
@@ -486,9 +441,7 @@ namespace sjtu {
             return *this;
         }
 
-        ~map() {
-            traverse_delete();
-        }
+        ~map() { traverse_delete(); }
 
         //access specified element with bounds checking
         //Returns a reference to the mapped value of the element with key equivalent to key.
@@ -506,18 +459,7 @@ namespace sjtu {
             throw index_out_of_bound();
         }
 
-        const T &at(const Key &key) const {
-            node *p = root;
-            if (root == nullptr) { throw index_out_of_bound(); }
-            while (p != nullptr) {
-                if (cmp(key, p->data.first)) {
-                    p = p->left_son;
-                } else if (cmp(p->data.first, key)) {
-                    p = p->right_son;
-                } else { return p->data.second; }
-            }
-            throw index_out_of_bound();
-        }
+        const T &at(const Key &key) const { return at(key); }
 
         //access specified element
         // Returns a reference to the value that is mapped to a key equivalent to key,
@@ -608,19 +550,19 @@ namespace sjtu {
             }
             if (is_left_son_of_father(p)) {
                 if (have_red_right_son(p)) {
-                    RR(p);
+                    rotate_RR(p);
                     p = p->father;
                 }//需双旋，先旋转子树
-                LL(p->father);//再旋
+                rotate_LL(p->father);//再旋
                 p->right_son->colour = red;
                 p->colour = black;
                 return true;
             } else {
                 if (have_red_left_son(p)) {
-                    LL(p);
+                    rotate_LL(p);
                     p = p->father;
                 }//需双旋，先旋转子树
-                RR(p->father);//再旋
+                rotate_RR(p->father);//再旋
                 p->left_son->colour = red;
                 p->colour = black;
                 return true;
@@ -719,13 +661,13 @@ namespace sjtu {
             if (p->colour == red) {
                 if (dir) {
                     if (have_red_right_son(p->right_son)) {
-                        RR(p);//需旋转
+                        rotate_RR(p);//需旋转
                         p->colour = black;
                         p->father->colour = red;
                         p->father->right_son->colour = black;
                     } else if (have_red_left_son(p->right_son)) {
-                        LL(p->right_son);//双旋转
-                        RR(p);
+                        rotate_LL(p->right_son);//双旋转
+                        rotate_RR(p);
                         p->father->colour = black;
                         p->father->right_son->colour = red;
                     } else {
@@ -734,13 +676,13 @@ namespace sjtu {
                     }
                 } else {
                     if (have_red_left_son(p->left_son)) {
-                        LL(p);//需旋转
+                        rotate_LL(p);//需旋转
                         p->colour = black;
                         p->father->colour = red;
                         p->father->left_son->colour = black;
                     } else if (have_red_right_son(p->left_son)) {
-                        RR(p->left_son);//双旋转
-                        LL(p);
+                        rotate_RR(p->left_son);//双旋转
+                        rotate_LL(p);
                         p->father->colour = black;
                         p->father->left_son->colour = red;
                     } else {
@@ -752,17 +694,17 @@ namespace sjtu {
             } else {
                 if (dir) {
                     if (p->right_son->colour == red) {//需调整的树的兄节点为红
-                        RR(p);
+                        rotate_RR(p);
                         p->colour = red;
                         p->father->colour = black;
                         return adjust_erase(p, true);//此时，转换为p为红的情况
                     } else {//兄弟节点为黑
                         if (have_red_right_son(p->right_son)) {
-                            RR(p);
+                            rotate_RR(p);
                             p->father->right_son->colour = black;
                         } else if (have_red_left_son(p->right_son)) {
-                            LL(p->right_son);
-                            RR(p);
+                            rotate_LL(p->right_son);
+                            rotate_RR(p);
                             p->father->colour = black;
                         } else {
                             p->right_son->colour = red;
@@ -772,17 +714,17 @@ namespace sjtu {
                     return true;
                 } else {
                     if (p->left_son->colour == red) {//需调整的树的兄节点为红
-                        LL(p);
+                        rotate_LL(p);
                         p->colour = red;
                         p->father->colour = black;
                         return adjust_erase(p, false);//此时，转换为p为红的情况
                     } else {//兄弟节点为黑
                         if (have_red_left_son(p->left_son)) {
-                            LL(p);
+                            rotate_LL(p);
                             p->father->left_son->colour = black;
                         } else if (have_red_right_son(p->left_son)) {
-                            RR(p->left_son);
-                            LL(p);
+                            rotate_RR(p->left_son);
+                            rotate_LL(p);
                             p->father->colour = black;
                         } else {
                             p->left_son->colour = red;
@@ -794,11 +736,11 @@ namespace sjtu {
             }
         }
 
-// Returns the number of elements with key
-//  that compares equivalent to the specified argument,
-//  which is either 1 or 0
-//     since this container does not allow duplicates.
-// The default method of check the equivalence is !(a < b || b > a)
+        //Returns the number of elements with key
+        //that compares equivalent to the specified argument,
+        //which is either 1 or 0
+        //since this container does not allow duplicates.
+        //The default method of check the equivalence is !(a < b || b > a)
         size_t count(const Key &key) const {
             if (root == nullptr) { return 0; }
             node *p = root;
@@ -830,32 +772,7 @@ namespace sjtu {
         }
 
         const_iterator find(const Key &key) const {
-            if (root == nullptr) { return const_iterator(this, nullptr); }
-            node *p = root;
-            while (true) {
-                if (p == nullptr) { return const_iterator(this, nullptr); }
-                if (cmp(key, p->data.first)) {
-                    p = p->left_son;
-                } else if (cmp(p->data.first, key)) {
-                    p = p->right_son;
-                } else { return const_iterator(this, p); }
-            }
-        }
-
-        void check() {
-            int h;
-            std::cout << "\n\nCHECK BEGIN!\n";
-            std::cout << "check the length of black road:                             ";
-            if (check_road(root, h)) {
-                std::cout << "PASSED with the road length<" << h << ">\n";
-            } else { std::cout << "FAILED\n"; }
-            std::cout << "check the colour and compare between father and son:        ";
-            if (check_node(root)) { std::cout << "PASSED\n"; }
-            else { std::cout << "FAILED\n"; }
-            std::cout << "check the link of nodes:                                    ";
-            if (check_link()) { std::cout << "PASSED\n"; }
-            else { std::cout << "FAILED\n"; }
-            std::cout << "CHECK END!\n\n";
+            return iterator(find(key));
         }
     };
 
