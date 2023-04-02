@@ -33,7 +33,7 @@ namespace sjtu {
 
         class const_iterator;
 
-    private:
+    public:
         /**
          * the internal type of data.
          * it should have a default constructor, a copy constructor.
@@ -441,7 +441,9 @@ namespace sjtu {
             return *this;
         }
 
-        ~map() { traverse_delete(); }
+        ~map() {
+            traverse_delete();
+        }
 
         //access specified element with bounds checking
         //Returns a reference to the mapped value of the element with key equivalent to key.
@@ -459,7 +461,18 @@ namespace sjtu {
             throw index_out_of_bound();
         }
 
-        const T &at(const Key &key) const { return at(key); }
+        const T &at(const Key &key) const {
+            node *p = root;
+            if (root == nullptr) { throw index_out_of_bound(); }
+            while (p != nullptr) {
+                if (cmp(key, p->data.first)) {
+                    p = p->left_son;
+                } else if (cmp(p->data.first, key)) {
+                    p = p->right_son;
+                } else { return p->data.second; }
+            }
+            throw index_out_of_bound();
+        }
 
         //access specified element
         // Returns a reference to the value that is mapped to a key equivalent to key,
@@ -736,11 +749,11 @@ namespace sjtu {
             }
         }
 
-        //Returns the number of elements with key
-        //that compares equivalent to the specified argument,
-        //which is either 1 or 0
-        //since this container does not allow duplicates.
-        //The default method of check the equivalence is !(a < b || b > a)
+// Returns the number of elements with key
+//  that compares equivalent to the specified argument,
+//  which is either 1 or 0
+//     since this container does not allow duplicates.
+// The default method of check the equivalence is !(a < b || b > a)
         size_t count(const Key &key) const {
             if (root == nullptr) { return 0; }
             node *p = root;
@@ -772,7 +785,16 @@ namespace sjtu {
         }
 
         const_iterator find(const Key &key) const {
-            return iterator(find(key));
+            if (root == nullptr) { return const_iterator(this, nullptr); }
+            node *p = root;
+            while (true) {
+                if (p == nullptr) { return const_iterator(this, nullptr); }
+                if (cmp(key, p->data.first)) {
+                    p = p->left_son;
+                } else if (cmp(p->data.first, key)) {
+                    p = p->right_son;
+                } else { return const_iterator(this, p); }
+            }
         }
     };
 
